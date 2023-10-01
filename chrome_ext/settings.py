@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", cast=bool)
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -77,17 +78,23 @@ WSGI_APPLICATION = "chrome_ext.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
-# else:
+# if DEBUG:
 # DATABASES = {
-# "default": dj_database_url.parse(config('DATABASE_URL'))
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "railway",
+#         "USER": "postgres",
+#         "PASSWORD": "",
+#         "HOST": "",
+#         "PORT": "",
+#     }
 # }
+# else:
+DATABASES = {
+    "default": dj_database_url.parse(
+        "postgresql://postgres:XUT2rqNQkh9RFcT4xRwk@containers-us-west-170.railway.app:5606/railway"
+    )  # dj_database_url.parse(config('DATABASE_URL'))
+}
 
 
 # Password validation
@@ -129,6 +136,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "media"),
     os.path.join(BASE_DIR, "static"),
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_build", "static")
 
 # media upload and accessing
 MEDIA_URL = "/media/"

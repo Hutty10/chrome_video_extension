@@ -58,8 +58,9 @@ class VideoCreateView(APIView):
                         # import pdb;pdb.set_trace()
                         chunk_byte = file.read()
                         video_file.write(chunk_byte)
-
-        return Response({"data": "pppp"})
+        response = serializer.data
+        response["video_id"] = video.pk
+        return Response(response, status=status.HTTP_201_CREATED)
 
 
 class GetVideo(RetrieveAPIView):

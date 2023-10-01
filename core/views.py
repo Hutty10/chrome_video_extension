@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from django.conf import settings
 from django.shortcuts import render
 from rest_framework.views import APIView
@@ -10,6 +11,7 @@ from django.http import FileResponse
 from rest_framework import status
 from django.db.models.manager import BaseManager
 from rest_framework.generics import RetrieveAPIView
+from django.core.files import File
 
 from .models import VideoRecord, VideoByteChunk
 from .serializers import VideoRecordSerializer, VideoChunkSerializer
@@ -34,14 +36,15 @@ class VideoCreateView(APIView):
         try:
             video = VideoRecord.objects.get(id=video_id)
         except VideoRecord.DoesNotExist:
-            # print("DOes not")
             video = VideoRecord.objects.create(title=data.get("video_title"))
             video_dir = os.path.join(settings.MEDIA_ROOT, "videos")
             os.makedirs(video_dir, exist_ok=True)
             video_path = f"{video_dir}/{video.title}_{video.pk}.mp4"
+            # import pdb;pdb.set_trace()
             ff = open(video_path, "+xb")
             video.video = video_path
             video.save()
+
             # print(ff)
         if video:
             video_chunk.video = video
@@ -50,14 +53,14 @@ class VideoCreateView(APIView):
         if video_chunk.is_last:
             chunks = VideoByteChunk.objects.filter(video=video).order_by("chunk_number")
             file = video.video.path
-            with open(file, "+ab") as video_file:
+            # import pdb;pdb.set_trace()
+            file_path = Path(file)
+            with file_path.open(mode="ab") as video_file:
                 for chunk in chunks:
-                    chunk_file = chunk.chunk_file.path
-
-                    with open(chunk_file, "rb") as file:
-                        # import pdb;pdb.set_trace()
-                        chunk_byte = file.read()
-                        video_file.write(chunk_byte)
+                    chunk_file = chunk.chunk_file
+                    # with open(chunk_file, "rb") as file:
+                    chunk_byte = chunk_file.read()
+                    video_file.write(chunk_byte)
         response = serializer.data
         response["video_id"] = video.pk
         return Response(response, status=status.HTTP_201_CREATED)

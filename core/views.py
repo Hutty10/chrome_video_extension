@@ -85,6 +85,21 @@ class GetVideo(APIView):
         data["video"] = video_path
 
         return Response(data)
+    
+    def patch(self, request, pk):
+        try:
+            video = VideoRecord.objects.get(pk=pk)
+        except VideoRecord.DoesNotExist:
+            return Response({"error": "invalid id"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = VideoRecordSerializer(video, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        data = serializer.data
+        video_dir = data.get("video").split("media")[-1]
+        video_path = "media" + video_dir
+        data["video"] = video_path
+
+        return Response(data)
 
 
 class GetAllVideo(APIView):
@@ -93,6 +108,8 @@ class GetAllVideo(APIView):
         serializer = VideoRecordSerializer(videos, many=True)
         data = serializer.data
         return Response(data)
+
+
 
 
 def send_file_to_rabbitmq(audio_file, video_id):
@@ -115,3 +132,5 @@ def send_file_to_rabbitmq(audio_file, video_id):
         print("Audio file sent")
     except Exception as e:
         print("Error sending audio", str(e))
+
+

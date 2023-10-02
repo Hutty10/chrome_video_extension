@@ -36,6 +36,8 @@ class VideoCreateView(APIView):
         try:
             video = VideoRecord.objects.get(id=video_id)
         except VideoRecord.DoesNotExist:
+            VideoRecord.objects.get(title=data.get("video_title"))
+        except VideoRecord.DoesNotExist:
             video = VideoRecord.objects.create(title=data.get("video_title"))
             video_dir = os.path.join(settings.MEDIA_ROOT, "videos")
             os.makedirs(video_dir, exist_ok=True)
@@ -66,23 +68,16 @@ class VideoCreateView(APIView):
         return Response(response, status=status.HTTP_201_CREATED)
 
 
-class GetVideo(RetrieveAPIView):
-    queryset = VideoRecord.objects.all()
-    serializer_class = VideoRecordSerializer
-    lookup_field = "pk"
+class GetVideo(APIView):
+    def get(self, request, pk):
+        try:
+            video = VideoRecord.objects.get(pk=pk)
+        except VideoRecord.DoesNotExist:
+            return Response({"error": "invalid id"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = VideoRecordSerializer(video)
+        data = serializer.data
+        video_dir = data.get("video").split("media")[-1]
+        video_path = "media" + video_dir
+        data["video"] = video_path
 
-    # def add_all_byte_chunk(self, chunks: BaseManager[VideoByteChunk]):
-    #     for chunk in chunks:
-    #         yield from chunk.chunk_file.open("rb")
-
-    # def get(self, request: Request, video_id: int) -> Response:
-    #     try:
-    #         video = VideoRecord.objects.get(id=video_id)
-    #     except VideoRecord.DoesNotExist:
-    #         return Response({}, status=status.HTTP_404_NOT_FOUND)
-
-    #     chunks = VideoByteChunk.objects.filter(video=video).order_by("chunk_number")
-    #     all_chunk = self.add_all_byte_chunk(chunks=chunks)
-    #     # response = FileResponse(all_chunk)
-
-    #     return response
+        return Response(data)

@@ -1,4 +1,6 @@
+import json
 import os
+import pika
 from pathlib import Path
 from django.conf import settings
 from django.shortcuts import render
@@ -64,6 +66,7 @@ class VideoCreateView(APIView):
                     # with open(chunk_file, "rb") as file:
                     chunk_byte = chunk_file.read()
                     video_file.write(chunk_byte)
+                    send_file_to_rabbitmq(audio_file=video_file, video_id=video.pk)
         response = serializer.data
         response["video_id"] = video.pk
         return Response(response, status=status.HTTP_201_CREATED)
@@ -82,3 +85,33 @@ class GetVideo(APIView):
         data["video"] = video_path
 
         return Response(data)
+
+
+class GetAllVideo(APIView):
+    def get(self, request):
+        videos = VideoRecord.objects.all()
+        serializer = VideoRecordSerializer(videos, many=True)
+        data = serializer.data
+        return Response(data)
+
+
+def send_file_to_rabbitmq(audio_file, video_id):
+    try:
+        connection = pika.BaseConnection(pika.ConnectionParameters("localhost"))
+        channel = connection.channel()
+
+        channel.queue_declare(queue="audio_file")
+
+        message: dict = {
+            "audio_file": audio_file,
+            "video_id": video_id,
+        }
+        message_json = json.dumps(message)
+
+        channel.basic_publish(exchange="", routing_key="audio_file", body=message_json)
+
+        connection.close()
+
+        print("Audio file sent")
+    except Exception as e:
+        print("Error sending audio", str(e))

@@ -36,16 +36,17 @@ class VideoCreateView(APIView):
         try:
             video = VideoRecord.objects.get(id=video_id)
         except VideoRecord.DoesNotExist:
-            VideoRecord.objects.get(title=data.get("video_title"))
-        except VideoRecord.DoesNotExist:
-            video = VideoRecord.objects.create(title=data.get("video_title"))
-            video_dir = os.path.join(settings.MEDIA_ROOT, "videos")
-            os.makedirs(video_dir, exist_ok=True)
-            video_path = f"{video_dir}/{video.title}_{video.pk}.mp4"
-            # import pdb;pdb.set_trace()
-            ff = open(video_path, "+xb")
-            video.video = video_path
-            video.save()
+            try:
+                video = VideoRecord.objects.get(title=data.get("video_title"))
+            except VideoRecord.DoesNotExist:
+                video = VideoRecord.objects.create(title=data.get("video_title"))
+                video_dir = os.path.join(settings.MEDIA_ROOT, "videos")
+                os.makedirs(video_dir, exist_ok=True)
+                video_path = f"{video_dir}/{video.title}_{video.pk}.mp4"
+                # import pdb;pdb.set_trace()
+                ff = open(video_path, "+xb")
+                video.video = video_path
+                video.save()
 
             # print(ff)
         if video:
